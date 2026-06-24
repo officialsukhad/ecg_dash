@@ -41,7 +41,7 @@
             font-family: 'Orbitron', sans-serif;
             font-weight: bold;
             font-size: 1.2rem;
-            padding: 8px;
+            padding: 10px;
             letter-spacing: 2px;
             box-shadow: 0 4px 20px rgba(255, 51, 51, 0.6);
             animation: pulse-red 1.5s infinite alternate;
@@ -60,6 +60,8 @@
             padding: 15px 30px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             background-color: rgba(6, 9, 19, 0.8);
+            flex-wrap: wrap; /* Allows wrapping on smaller screens */
+            gap: 15px;
         }
 
         h1 {
@@ -67,9 +69,18 @@
             font-size: 1.5rem;
             color: var(--text-main);
             letter-spacing: 1.5px;
+            text-align: center;
+            flex: 1 1 100%; /* Default to full width on mobile */
         }
 
-        .badge-container { display: flex; gap: 10px; }
+        .badge-container { 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap;
+            justify-content: center;
+            flex: 1 1 100%; /* Default to full width on mobile */
+        }
+
         .badge {
             padding: 5px 12px;
             border-radius: 15px;
@@ -78,6 +89,7 @@
             text-transform: uppercase;
             background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
         }
         .badge-patient { color: var(--neon-cyan); border-color: rgba(0, 240, 255, 0.3); }
         .badge-esp { color: var(--neon-red); border-color: rgba(255, 51, 51, 0.4); }
@@ -100,7 +112,7 @@
             background: var(--card-bg);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-            padding: 12px 20px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -128,7 +140,8 @@
             padding: 15px;
             position: relative;
             flex-grow: 1;
-            min-height: 220px; 
+            display: flex;
+            flex-direction: column;
         }
 
         .chart-container.spo2-theme { border-color: rgba(0, 240, 255, 0.1); }
@@ -140,6 +153,7 @@
             margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
+            z-index: 10;
         }
 
         .chart-header.ecg { color: var(--neon-green); }
@@ -156,14 +170,55 @@
             z-index: 1;
         }
 
-        canvas { position: relative; z-index: 2; width: 100% !important; height: 100% !important; }
+        .canvas-wrapper {
+            position: relative; 
+            flex-grow: 1;
+            min-height: 150px; /* Base height for small screens */
+        }
 
-        footer { text-align: center; padding: 10px; font-size: 0.8rem; color: var(--text-muted); background-color: rgba(0,0,0,0.5); }
+        canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; z-index: 2; }
+
+        footer { text-align: center; padding: 15px; font-size: 0.8rem; color: var(--text-muted); background-color: rgba(0,0,0,0.5); }
+
+        /* ==========================================
+           RESPONSIVE MEDIA QUERIES
+           ========================================== */
+        
+        /* TABLET & SMALL DESKTOP (900px and below) */
+        @media (min-width: 769px) {
+            h1 { flex: 0 1 auto; text-align: left; }
+            .badge-container { flex: 0 1 auto; justify-content: flex-end; }
+            .canvas-wrapper { min-height: 200px; }
+        }
+
+        @media (max-width: 900px) and (min-width: 601px) {
+            .vitals-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+            }
+            .card-temp {
+                grid-column: span 2; /* Make the 3rd card span full width to look neat */
+            }
+        }
+
+        /* MOBILE PHONES (600px and below) */
+        @media (max-width: 600px) {
+            header { padding: 15px; flex-direction: column; gap: 10px; }
+            h1 { font-size: 1.2rem; }
+            main { padding: 15px; gap: 15px; }
+            .vitals-grid {
+                grid-template-columns: 1fr; /* 1 column on phones */
+                gap: 10px;
+            }
+            .card { padding: 12px 15px; }
+            .chart-header { font-size: 0.75rem; flex-direction: column; gap: 5px; text-align: center; }
+            .canvas-wrapper { min-height: 180px; } /* Ensure graphs are tall enough to see waves */
+            #emergency-banner { font-size: 1rem; padding: 10px 5px; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="emergency-banner">CRITICAL ALERT: UNSTABLE HEART RATE DETECTED</div>
+    <div id="emergency-banner">CRITICAL ALERT: UNSTABLE HEART RATE</div>
 
     <header>
         <h1>IOT BASED HEALTH MONITORING</h1>
@@ -196,7 +251,7 @@
                     <span id="stream-status">SWEEP: 250 HZ</span>
                 </div>
                 <div class="oscilloscope-grid"></div>
-                <div style="position: relative; height: 200px;">
+                <div class="canvas-wrapper">
                     <canvas id="ecgChart"></canvas>
                 </div>
             </div>
@@ -206,7 +261,7 @@
                     <span>SpO2 OXYGEN TREND (%)</span>
                 </div>
                 <div class="oscilloscope-grid"></div>
-                <div style="position: relative; height: 160px;">
+                <div class="canvas-wrapper">
                     <canvas id="spo2Chart"></canvas>
                 </div>
             </div>
