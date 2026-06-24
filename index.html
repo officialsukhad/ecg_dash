@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOT BASED HEALTH MONITORING</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #060913;
+            --card-bg: rgba(13, 20, 38, 0.6);
+            --neon-green: #00ff66;
+            --neon-cyan: #00f0ff;
+            --neon-amber: #ffaa00;
+            --neon-red: #ff3333;
+            --text-main: #f0f4f8;
+            --text-muted: #7d8da4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(0, 240, 255, 0.03) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(0, 255, 102, 0.03) 0px, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #emergency-banner {
+            display: none;
+            background: linear-gradient(90deg, #990000, var(--neon-red), #990000);
+            color: white;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 8px;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 20px rgba(255, 51, 51, 0.6);
+            animation: pulse-red 1.5s infinite alternate;
+            z-index: 999;
+        }
+
+        @keyframes pulse-red {
+            0% { opacity: 0.8; box-shadow: 0 0 10px rgba(255,51,51,0.5); }
+            100% { opacity: 1; box-shadow: 0 0 25px rgba(255,51,51,0.9); }
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(6, 9, 19, 0.8);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            letter-spacing: 1.5px;
+        }
+
+        .badge-container { display: flex; gap: 10px; }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .badge-patient { color: var(--neon-cyan); border-color: rgba(0, 240, 255, 0.3); }
+        .badge-esp { color: var(--neon-red); border-color: rgba(255, 51, 51, 0.4); }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px 30px;
+        }
+
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-hr { border-left: 3px solid var(--neon-cyan); }
+        .card-spo2 { border-left: 3px solid var(--neon-green); }
+        .card-temp { border-left: 3px solid var(--neon-amber); }
+
+        .card-info h3 { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; }
+        .card-value { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 700; }
+        
+        .card-hr .card-value { color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0, 240, 255, 0.3); }
+        .card-spo2 .card-value { color: var(--neon-green); text-shadow: 0 0 8px rgba(0, 255, 102, 0.3); }
+        .card-temp .card-value { color: var(--neon-amber); text-shadow: 0 0 8px rgba(255, 170, 0, 0.3); }
+        .unit { font-size: 0.9rem; color: var(--text-muted); margin-left: 4px; }
+
+        .graphs-wrapper { display: flex; flex-direction: column; gap: 15px; flex-grow: 1; }
+
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 255, 102, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            flex-grow: 1;
+            min-height: 220px; 
+        }
+
+        .chart-container.spo2-theme { border-color: rgba(0, 240, 255, 0.1); }
+
+        .chart-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .chart-header.ecg { color: var(--neon-green); }
+        .chart-header.spo2 { color: var(--neon-cyan); }
+
+        .oscilloscope-grid {
+            position: absolute;
+            top: 40px; left: 15px; right: 15px; bottom: 15px;
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        canvas { position: relative; z-index: 2; width: 100% !important; height: 100% !important; }
+
+        footer { text-align: center; padding: 10px; font-size: 0.8rem; color: var(--text-muted); background-color: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="emergency-banner">CRITICAL ALERT: UNSTABLE HEART RATE DETECTED</div>
+
+    <header>
+        <h1>IOT BASED HEALTH MONITORING</h1>
+        <div class="badge-container">
+            <span class="badge badge-patient">Patient 1</span>
+            <span class="badge badge-esp">SIMULATOR MODE ACTIVATED</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="vitals-grid">
+            <div class="card card-hr">
+                <div class="card-info"><h3>Heart Rate</h3></div>
+                <div class="card-value"><span id="val-hr">--</span><span class="unit">BPM</span></div>
+            </div>
+            <div class="card card-spo2">
+                <div class="card-info"><h3>Oxygen Saturation</h3></div>
+                <div class="card-value"><span id="val-spo2">--</span><span class="unit">%</span></div>
+            </div>
+            <div class="card card-temp">
+                <div class="card-info"><h3>Temperature</h3></div>
+                <div class="card-value"><span id="val-temp">--</span><span class="unit">°C</span></div>
+            </div>
+        </div>
+
+        <div class="graphs-wrapper">
+            <div class="chart-container">
+                <div class="chart-header ecg">
+                    <span>LIVE ECG SIGNAL</span>
+                    <span id="stream-status">SWEEP: 250 HZ</span>
+                </div>
+                <div class="oscilloscope-grid"></div>
+                <div style="position: relative; height: 200px;">
+                    <canvas id="ecgChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container spo2-theme">
+                <div class="chart-header spo2">
+                    <span>SpO2 OXYGEN TREND (%)</span>
+                </div>
+                <div class="oscilloscope-grid"></div>
+                <div style="position: relative; height: 160px;">
+                    <canvas id="spo2Chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <i>⚠️ Notice: The system is running entirely in-browser using mathematical JS algorithms for GitHub Pages compatibility. No real patient data is being transmitted.</i>
+    </footer>
+
+    <script>
+        const MAX_WINDOW = 100; 
+        const labelsData = Array(MAX_WINDOW).fill('');
+        const ecgBuffer = Array(MAX_WINDOW).fill(null);
+        const spo2Buffer = Array(MAX_WINDOW).fill(null);
+
+        // Setup ECG Chart (Fixed scale to prevent distortion)
+        const ecgCtx = document.getElementById('ecgChart').getContext('2d');
+        const ecgChart = new Chart(ecgCtx, {
+            type: 'line',
+            data: {
+                labels: labelsData,
+                datasets: [{
+                    data: ecgBuffer,
+                    borderColor: '#00ff66',
+                    borderWidth: 2,
+                    pointRadius: 0, 
+                    lineTension: 0.3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        min: -0.6,    
+                        max: 1.8,     
+                        grid: { display: false },
+                        ticks: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Setup SpO2 Chart
+        const spo2Ctx = document.getElementById('spo2Chart').getContext('2d');
+        const spo2Chart = new Chart(spo2Ctx, {
+            type: 'line',
+            data: {
+                labels: labelsData,
+                datasets: [{
+                    data: spo2Buffer,
+                    borderColor: '#00f0ff',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    lineTension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(0, 240, 255, 0.05)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false, 
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        min: 94,   
+                        max: 100,  
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#7d8da4', font: { family: 'Orbitron' } }
+                    }
+                }
+            }
+        });
+
+        // --- IN-BROWSER MATH SIMULATOR (Replaces Python Backend) ---
+        let time_elapsed = 0.0;
+        let phase = 0.0;
+        const dt = 1.0 / 250.0; // 250Hz sampling
+
+        function simulatePatientData() {
+            // Heart Rate Variability Math
+            let current_bpm = 75.0 + (1.8 * Math.sin(time_elapsed * 0.05)) + (Math.random() * 0.6 - 0.3);
+            
+            // Randomly trigger an anomaly for UI demonstration (about 1 in 2000 chance per tick)
+            if (Math.random() < 0.0005) {
+                current_bpm = 115.0; // Sudden Tachycardia
+            }
+
+            let beat_duration = 60.0 / current_bpm;
+            phase += dt / beat_duration;
+            if (phase >= 1.0) phase -= 1.0;
+
+            // PQRST Complex Generation
+            let ecg_signal = 0.0;
+            if (phase >= 0.10 && phase <= 0.22) {
+                ecg_signal += 0.12 * Math.sin(Math.PI * (phase - 0.10) / 0.12); // P Wave
+            } else if (phase >= 0.25 && phase <= 0.28) {
+                ecg_signal -= 0.15 * Math.sin(Math.PI * (phase - 0.25) / 0.03); // Q Wave
+            } else if (phase > 0.28 && phase <= 0.33) {
+                ecg_signal += 1.4 * Math.sin(Math.PI * (phase - 0.28) / 0.05); // R Spike
+            } else if (phase > 0.33 && phase <= 0.37) {
+                ecg_signal -= 0.35 * Math.sin(Math.PI * (phase - 0.33) / 0.04); // S Wave
+            } else if (phase >= 0.55 && phase <= 0.75) {
+                ecg_signal += 0.28 * Math.sin(Math.PI * (phase - 0.55) / 0.20); // T Wave
+            }
+            
+            ecg_signal += (Math.random() * 0.04 - 0.02); // High Frequency Noise
+
+            let current_spo2 = 98.2 + (Math.random() * 0.2 - 0.1);
+            if (current_bpm < 60) current_spo2 -= 1.5;
+            
+            let current_temp = 36.5 + (Math.random() * 0.06 - 0.03);
+
+            time_elapsed += dt;
+
+            return {
+                heart_rate: current_bpm.toFixed(1),
+                spo2: current_spo2.toFixed(1),
+                temperature: current_temp.toFixed(1),
+                ecg_value: ecg_signal
+            };
+        }
+
+        // --- MAIN RENDER LOOP ---
+        function runTelemetryLoop() {
+            const data = simulatePatientData();
+
+            // 1. Update UI Numbers
+            document.getElementById('val-hr').innerText = data.heart_rate;
+            document.getElementById('val-spo2').innerText = data.spo2;
+            document.getElementById('val-temp').innerText = data.temperature;
+
+            // 2. Alert Logic
+            const hr = parseFloat(data.heart_rate);
+            const alertBanner = document.getElementById('emergency-banner');
+            alertBanner.style.display = (hr < 60 || hr > 100) ? 'block' : 'none';
+
+            // 3. Update ECG Graph
+            ecgChart.data.datasets[0].data.push(data.ecg_value);
+            if (ecgChart.data.datasets[0].data.length > MAX_WINDOW) {
+                ecgChart.data.datasets[0].data.shift();
+            }
+            ecgChart.update();
+
+            // 4. Update SpO2 Graph
+            spo2Chart.data.datasets[0].data.push(data.spo2);
+            if (spo2Chart.data.datasets[0].data.length > MAX_WINDOW) {
+                spo2Chart.data.datasets[0].data.shift();
+            }
+            spo2Chart.update();
+        }
+
+        // Poll the math simulator every 120ms
+        setInterval(runTelemetryLoop, 120);
+    </script>
+</body>
+</html>
